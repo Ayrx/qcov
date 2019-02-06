@@ -34,10 +34,10 @@ function init_qbdi(name, entrypoint, imagebase) {
     vm.addVMEventCB(VMEvent.BASIC_BLOCK_NEW, bb_callback, null);
 
     var process_base = Process.findModuleByName(name).base
-    var address_offset = process_base.sub(imagebase).toInt32()
-    var actual_entrypoint = entrypoint + address_offset;
+    var address_offset = process_base.sub(imagebase)
+    var actual_entrypoint = address_offset.add(entrypoint);
 
-    vm.run(ptr(actual_entrypoint), ptr(42));
+    vm.run(actual_entrypoint, ptr(42));
 
     send({"type": "done"});
 }
