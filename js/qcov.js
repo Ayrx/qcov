@@ -3,13 +3,13 @@ qbdi.import();
 
 rpc.exports = {
 
-    init: function(name) {
-        init_qbdi(name);
+    init: function(name, entrypoint, imagebase) {
+        init_qbdi(name, entrypoint, imagebase);
     }
 }
 
 
-function init_qbdi(name) {
+function init_qbdi(name, entrypoint, imagebase) {
     var modules = Process.enumerateModulesSync();
     send({"type": "module_map", "modules": modules});
 
@@ -33,8 +33,11 @@ function init_qbdi(name) {
     });
     vm.addVMEventCB(VMEvent.BASIC_BLOCK_NEW, bb_callback, null);
 
-    var main_addr = Module.findExportByName(null, "main");
-    vm.run(main_addr, ptr(42));
+    var process_base = Process.findModuleByName(name).base
+    var address_offset = process_base.sub(imagebase).toInt32()
+    var actual_entrypoint = entrypoint + address_offset;
+
+    vm.run(ptr(actual_entrypoint), ptr(42));
 
     send({"type": "done"});
 }

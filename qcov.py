@@ -1,5 +1,6 @@
 import click
 import frida
+import lief
 from tabulate import tabulate
 
 import os
@@ -115,6 +116,9 @@ def cli(target, outfile):
     devices = frida.get_device_manager().enumerate_devices()
     device = get_device(devices)
 
+    click.echo("Parsing binary...")
+    p = lief.parse(str(target))
+
     pid = device.spawn([target])
     process = device.attach(pid)
 
@@ -124,7 +128,7 @@ def cli(target, outfile):
     script.on("message", process_message)
     script.load()
 
-    script.exports.init("hello")
+    script.exports.init("hello", p.entrypoint, p.imagebase)
     device.resume(pid)
 
 
