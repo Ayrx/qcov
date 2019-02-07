@@ -40,6 +40,7 @@ def process_message(message, data):
             device.kill(pid)
             click.echo("Writing coverage data...")
             cov_file.write(make_cov_file(modules_global, coverage_data))
+            cov_file.close()
             os._exit(0)
 
 
