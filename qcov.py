@@ -100,6 +100,19 @@ def list_devices(devices):
         devices_info, headers=["id", "name", "type"], showindex=True))
 
 
+def parse_binary(b):
+    click.echo("Parsing binary...")
+    p = lief.parse(str(b))
+
+    # We probably need to make this use p.entrypoint for Mach-O binaries.
+    # TODO: Test and make the platform appropriate changes...
+    m = p.get_symbol("main")
+    entrypoint = m.value
+    imagebase = p.imagebase
+
+    return entrypoint, imagebase
+
+
 @click.command(
     help="Get code coverage information with QBDI."
 )
@@ -117,8 +130,7 @@ def cli(target, outfile):
     devices = frida.get_device_manager().enumerate_devices()
     device = get_device(devices)
 
-    click.echo("Parsing binary...")
-    p = lief.parse(str(target))
+    entrypoint, imagebase = parse_binary(target)
 
     pid = device.spawn([target])
     process = device.attach(pid)
@@ -129,7 +141,7 @@ def cli(target, outfile):
     script.on("message", process_message)
     script.load()
 
-    script.exports.init("hello", p.entrypoint, p.imagebase)
+    script.exports.init("hello", entrypoint, imagebase)
     device.resume(pid)
 
 

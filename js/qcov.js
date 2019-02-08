@@ -38,6 +38,9 @@ function init_qbdi(name, entrypoint, imagebase) {
     var actual_entrypoint = address_offset.add(entrypoint);
 
     vm.run(actual_entrypoint, ptr(42));
+	vm.alignedFree(stack);
 
     send({"type": "done"});
+
+	recv({}).wait();
 }
