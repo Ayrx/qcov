@@ -104,13 +104,20 @@ def parse_binary(b):
     click.echo("Parsing binary...")
     p = lief.parse(str(b))
 
-    # We probably need to make this use p.entrypoint for Mach-O binaries.
-    # TODO: Test and make the platform appropriate changes...
-    m = p.get_symbol("main")
-    entrypoint = m.value
+    name = p.name
     imagebase = p.imagebase
 
-    return entrypoint, imagebase
+    if p.format == lief.EXE_FORMATS.ELF:
+        m = p.get_symbol("main")
+        entrypoint = m.value
+        name = p.name
+    elif p.format == lief.EXE_FORMATS.MACHO:
+        entrypoint = p.entrypoint
+    else:
+        click.echo("Unsupported format. Exiting...")
+        os._exit(1)
+
+    return name, entrypoint, imagebase
 
 
 @click.command(
@@ -130,7 +137,7 @@ def cli(target, outfile):
     devices = frida.get_device_manager().enumerate_devices()
     device = get_device(devices)
 
-    entrypoint, imagebase = parse_binary(target)
+    name, entrypoint, imagebase = parse_binary(target)
 
     pid = device.spawn([target])
     process = device.attach(pid)
@@ -141,7 +148,7 @@ def cli(target, outfile):
     script.on("message", process_message)
     script.load()
 
-    script.exports.init("hello", entrypoint, imagebase)
+    script.exports.init(name, entrypoint, imagebase)
     device.resume(pid)
 
 
