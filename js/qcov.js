@@ -20,7 +20,16 @@ function init_qbdi(name, entrypoint, imagebase) {
     var stack = vm.allocateVirtualStack(state, 0x100000);
 
     vm.simulateCall(state, ptr(42).toRword());
-    vm.addInstrumentedModule(name);
+    vm.instrumentAllExecutableMaps();
+
+	var modules = vm.getModuleNames();
+	for (var i in modules) {
+		var blacklist = /(libc(.*))|(frida(.*))|(libQBDI(.*))|(libstdc(.*))/
+		if (blacklist.test(modules[i])) {
+			vm.removeInstrumentedModule(modules[i]);
+		}
+	}
+
 
     var bb_callback = vm.newVMCallback(function(vm, evt, gpr, fpr, data) {
         send({
