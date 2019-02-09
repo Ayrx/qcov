@@ -3,13 +3,13 @@ qbdi.import();
 
 rpc.exports = {
 
-    init: function(name, entrypoint, imagebase) {
-        init_qbdi(name, entrypoint, imagebase);
+    init: function(name, entrypoint, imagebase, modules_to_instrument) {
+        init_qbdi(name, entrypoint, imagebase, modules_to_instrument);
     }
 }
 
 
-function init_qbdi(name, entrypoint, imagebase) {
+function init_qbdi(name, entrypoint, imagebase, modules_to_instrument) {
     var modules = Process.enumerateModulesSync();
     send({"type": "module_map", "modules": modules});
 
@@ -20,7 +20,11 @@ function init_qbdi(name, entrypoint, imagebase) {
     var stack = vm.allocateVirtualStack(state, 0x100000);
 
     vm.simulateCall(state, ptr(42).toRword());
-    vm.addInstrumentedModule(name);
+
+    for (var i in modules_to_instrument) {
+        console.log("Instrumenting module: " + modules_to_instrument[i]);
+        vm.addInstrumentedModule(modules_to_instrument[i]);
+    }
 
     var bb_callback = vm.newVMCallback(function(vm, evt, gpr, fpr, data) {
         send({

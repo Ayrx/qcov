@@ -10,7 +10,7 @@ import struct
 
 class Qcov(object):
 
-    def __init__(self, target, outfile):
+    def __init__(self, target, outfile, modules):
         self._device = None
         self._target = target
         self._outfile = outfile
@@ -26,6 +26,12 @@ class Qcov(object):
         res = self._parse_binary(target)
         self._bin_name, self._bin_entrypoint, self._bin_imagebase = res
 
+        # If no modules are specified, instrument the binary's module.
+        if len(modules) == 0:
+            self._modules = [self._bin_name]
+        else:
+            self._modules = list(modules)
+
     def spawn(self):
         self._pid = self._device.spawn([self._target])
         process = self._device.attach(self._pid)
@@ -39,7 +45,8 @@ class Qcov(object):
         script.exports.init(
             self._bin_name,
             self._bin_entrypoint,
-            self._bin_imagebase
+            self._bin_imagebase,
+            self._modules
         )
         device.resume(pid)
 
@@ -150,8 +157,9 @@ class Qcov(object):
 )
 @click.argument("target", type=click.Path(exists=True))
 @click.option("-o", "--outfile", type=click.File("wb"))
-def cli(target, outfile):
-    qcov = Qcov(target, outfile)
+@click.option("-m", "--modules", type=str, multiple=True)
+def cli(target, outfile, modules):
+    qcov = Qcov(target, outfile, modules)
     qcov.spawn()
 
 
